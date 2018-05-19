@@ -1,7 +1,6 @@
 from math import sqrt
 
-from src import config
-from src.read import read_readings, read_anchors
+from src import config, utilities, read
 
 
 # predeclarations were needed for typing operator arguments
@@ -99,9 +98,10 @@ def median(iterable):
     return out
 
 
-def get_objects():
-    tag_ids, readings = read_readings()
-    _, anchors = read_anchors()
+@utilities.once
+def get_intersections():
+    tag_ids, readings = read.readings()
+    _, anchors = read.anchors()
 
     assert (len(anchors.shape) == 2 and anchors.shape[1] == 2)
     assert (anchors.shape[0] == readings.shape[1])
@@ -131,3 +131,32 @@ def get_objects():
                    points))))  # filter out those that are too distant from median
 
     return output
+
+@utilities.once
+def get_point_data():
+    anchor_coords = read.anchors()[1]
+
+    inters = get_intersections()
+    readings = read.readings()
+    points = []
+    circs = []
+    for inter_set, circ_set in zip(inters, readings[1]):
+        points.append([sum(y) / len(y) for y in zip(*inter_set[1])])
+        circs.append(zip(anchor_coords, circ_set))
+
+    return zip(points, circs, inters)
+
+
+# @utilities.once
+# def get_containment():
+#     inters = get_intersections()
+#     polys = read.polygons()
+#
+#     print(inters)
+#
+#     for p in polys:
+#         print(p.contains_points(inters))
+#
+#
+# get_containment()
+

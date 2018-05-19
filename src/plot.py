@@ -6,8 +6,8 @@ import matplotlib
 import numpy as np
 from matplotlib.patches import Circle, Wedge
 
-from src.analyze import get_objects
-from src.read import read_polygons, read_anchors, read_readings
+from src import read, analyze
+from src.analyze import get_intersections
 
 
 def make_circ(elem, *args, full=True, radius=0.04):
@@ -20,7 +20,7 @@ def make_circ(elem, *args, full=True, radius=0.04):
 
 
 def init_polygons(ax):
-    polygons = read_polygons()
+    polygons = read.polygons()
     poly_coll = PatchCollection(polygons, alpha=0.6)
     poly_coll.set_facecolors(plt.get_cmap('Pastel1')(np.arange(.10, 1.99, .24)))
     poly_coll.set_edgecolor('black')
@@ -28,7 +28,7 @@ def init_polygons(ax):
 
 
 def init_anchors(ax):
-    anchor_coords = read_anchors()[1]
+    anchor_coords = read.anchors()[1]
     anchors = [make_circ(elem, radius=0.055) for elem in anchor_coords]
     anch_coll = PatchCollection(anchors, alpha=0.8)
     anch_coll.set_color('black')
@@ -45,8 +45,8 @@ def create_inters(inter_set):
     return i
 
 
-def create_circs(circ_set, anchor_coords):
-    circs = [make_circ(elem, full=False, radius=r) for elem, r in zip(anchor_coords, circ_set)]
+def create_circs(circ_set):
+    circs = [make_circ(elem, full=False, radius=r) for elem, r in circ_set]
     c = PatchCollection(circs, alpha=0.8)
     c.set_visible(False)
     return c
@@ -106,15 +106,13 @@ def draw():
     circ_colls = []
     points = []
 
-    interesting_intersections = get_objects()
-    readings = read_readings()
+    interesting_intersections = get_intersections()
+    readings = read.readings()
 
-    for inter_set, circ_set in zip(interesting_intersections, readings[1]):
-        mean = [sum(y) / len(y) for y in zip(*inter_set[1])]
-        points.append(make_circ(mean, radius=0.03, full=True))
-
-        inter_colls.append(create_inters(inter_set))
-        circ_colls.append(create_circs(circ_set, anchor_coords))
+    for point, circs, inters in analyze.get_point_data():
+        points.append(make_circ(point, radius=0.03, full=True))
+        circ_colls.append(create_circs(circs))
+        inter_colls.append(create_inters(inters))
 
     pt_coll, colors = init_points(ax, points)
 

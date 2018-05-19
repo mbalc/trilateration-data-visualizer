@@ -3,39 +3,25 @@ import re
 from matplotlib.patches import Polygon
 import numpy as np
 
-from src import config
+from src import config, utilities
 
 FIND_FLOATS = r'[-+]?[0-9]*\.?[0-9]+'
-
-
-def once(a_func):
-    """Wrapper to reuse value returned with a first use on all future calls"""
-    counter = 0
-    output = 0  # may be initiated to anything
-
-    def wrapper():
-        nonlocal counter, output
-        if counter < 1:
-            output = a_func()
-        else:
-            counter += 1
-        return output
-
-    return wrapper
 
 
 def indexify(a_file, datatype=float):
     """Convert each file line into a tuple of row indexes list (row's first cell) and ndarray of
     values"""
+
     line_contents = [re.findall(FIND_FLOATS, line) for line in a_file.readlines()]
     return [int(elem[0]) for elem in line_contents], np.array(
         [[datatype(sub) for sub in elem[1:]] for elem in line_contents])
 
 
-@once
-def read_polygons():
+@utilities.once
+def polygons():
     """Read contents of files set in config and prepare relevant Polygon patches basing on this
     data"""
+
     polygon_file = open(config.POLYGON_PATH, 'r')
     vertex_file = open(config.VERTEX_PATH, 'r')
 
@@ -54,11 +40,11 @@ def read_polygons():
     return polygons
 
 
-@once
-def read_readings():
+@utilities.once
+def readings():
     return indexify(open(config.READING_PATH), float)
 
 
-@once
-def read_anchors():
+@utilities.once
+def anchors():
     return indexify(open(config.ANCHOR_PATH), float)
