@@ -1,0 +1,2 @@
+#!/bin/bash
+ipython src/plot.py
