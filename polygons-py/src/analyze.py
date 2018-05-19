@@ -76,7 +76,7 @@ def intersect(o1: Circle, o2: Circle):
 
     if (r1 - r2) ** 2 >= center_dist_sq:  # circles are self-contained
         mid_length = (r1 - center_dist - r2)
-        return [c1 + ((c2 - c1) * ((center_dist + r2 + mid_length / 2) / r1))]
+        return [c1 + ((c2 - c1) * ((center_dist + r2 + (mid_length / 2)) / center_dist))]
 
     else:  # circles have exactly two points of intersect:
         assert (center_dist > 0.)  # if these are equal, we should have handled it in cases above
@@ -88,7 +88,7 @@ def intersect(o1: Circle, o2: Circle):
         # d(|a| - |b|) = r1^2 - r2^2   (we know d > 0)
         # |a| = |b| + ((r1^2 - r2^2)/d)
         p1_to_mid_length = (((r1 ** 2 - r2 ** 2) / center_dist) + center_dist) / 2
-        print(p1_to_mid_length)
+        # print(p1_to_mid_length)
         mid = c1 + ((c2 - c1) * (p1_to_mid_length / center_dist))
         mid_to_i1_length = sqrt(r1 ** 2 - p1_to_mid_length ** 2)
         v1 = ((c2 - c1) * (mid_to_i1_length / center_dist)).rotate()
@@ -101,7 +101,7 @@ def intersect(o1: Circle, o2: Circle):
 
 def median(iterable):
     length = len(iterable)
-    print(length, '   ', iterable)
+    # print(length, '   ', iterable)
     if length == 0:
         return 0
     out = iterable[int(length / 2)]
@@ -124,20 +124,19 @@ def get_objects():
                tag, elem in zip(tag_ids, readings)]
 
     output = []
-    intersections = []
-    tag_id, reads = circles[5]
 
-    for i1 in range(len(reads)):
-        for i2 in range(i1 + 1, len(reads)):
-            out = intersect(reads[i1], reads[i2])
-            intersections.extend(out)
+    for tag_id, reads in circles:
+        intersections = []
+        for i1 in range(len(reads)):
+            for i2 in range(i1 + 1, len(reads)):
+                out = intersect(reads[i1], reads[i2])
+                intersections.extend(out)
 
-    points = [(elem.x, elem.y) for elem in intersections]
-    med = (median(sorted(points, key=lambda elem: elem[0]))[0],
-           median(sorted(points, key=lambda elem: elem[1]))[1])  # indepedent x and y median point
-    print(med)
-    output.append((tag_id,
-                   filter(lambda elem: (med[0] - elem[0]) ** 2 + (med[1] - elem[1]) ** 2 <
-                                       config.EPSILON, points)))
+        points = [(elem.x, elem.y) for elem in intersections]
+        # indepedent x and y median point
+        med = (median(sorted(points, key=lambda elem: elem[0]))[0],
+               median(sorted(points, key=lambda elem: elem[1]))[1])
+        # print(med)
+        output.append((tag_id, list(filter(lambda elem: (med[0] - elem[0]) ** 2 + (med[1] - elem[1]) ** 2 < config.EPSILON, points))))
 
     return output

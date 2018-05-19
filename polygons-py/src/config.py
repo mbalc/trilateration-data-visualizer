@@ -7,4 +7,4 @@ READING_PATH = os.path.join(DATA_PATH, 'readings')
 ANCHOR_PATH = os.path.join(DATA_PATH, 'anchors')
 
 """parameter for filtering out non-relevant intersection points too distant from median point"""
-EPSILON = 0.25  #
+EPSILON = 0.55
