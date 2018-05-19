@@ -1,3 +1,5 @@
+from random import randrange
+
 import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 import matplotlib
@@ -8,63 +10,58 @@ from src.analyze import get_objects
 from src.read import read_polygons, read_anchors, read_readings
 
 
-def make_point(elem, *args, full=True, radius=0.04):
-    def getter(el): return Wedge([*el], radius, 0, 360, width=0.004, edgecolor='black')
+def make_circ(elem, *args, full=True, radius=0.04):
+    def getter(el): return Wedge([*el], radius, 0, 360, width=0.004)
 
     if full:
-        def getter(el): return Circle([*el], radius=radius, color='black', facecolor='black',
-                                      edgecolor='black')
+        def getter(el): return Circle([*el], radius=radius)
+
     return getter(elem)
 
 
-def draw():
-    matplotlib.pyplot.style.use('seaborn')
-    fig, ax = plt.subplots()
-
+def init_polygons(ax):
     polygons = read_polygons()
-    readings = read_readings()
-
     poly_coll = PatchCollection(polygons, alpha=0.6)
     poly_coll.set_facecolors(plt.get_cmap('Pastel1')(np.arange(.10, 1.99, .24)))
     poly_coll.set_edgecolor('black')
     ax.add_collection(poly_coll)
 
+
+def init_anchors(ax):
     anchor_coords = read_anchors()[1]
-    anchors = [make_point(elem, radius=0.055) for elem in anchor_coords]
+    anchors = [make_circ(elem, radius=0.055) for elem in anchor_coords]
     anch_coll = PatchCollection(anchors, alpha=0.8)
     anch_coll.set_color('black')
     ax.add_collection(anch_coll)
 
-    inter_colls = []
-    circ_colls = []
-    points = []
+    return anchor_coords
 
-    interesting_intersections = get_objects()
-    for inter_set, circ_set in zip(interesting_intersections, readings[1]):
-        mean = [sum(y) / len(y) for y in zip(*inter_set[1])]
-        points.append(make_point(mean, radius=0.03, full=True))
 
-        inters = [make_point(elem, full=False) for elem in inter_set[1]]
-        i = PatchCollection(inters, alpha=1.0)
-        i.set_visible(False)
-        i.set_color('black')
-        inter_colls.append(i)
+def create_inters(inter_set):
+    inters = [make_circ(elem, full=False) for elem in inter_set[1]]
+    i = PatchCollection(inters, alpha=1.0)
+    i.set_visible(False)
+    i.set_color('black')
+    return i
 
-        circs = [make_point(elem, full=False, radius=r) for elem, r in zip(anchor_coords, circ_set)]
-        c = PatchCollection(circs, alpha=0.8)
-        c.set_visible(False)
-        circ_colls.append(c)
 
+def create_circs(circ_set, anchor_coords):
+    circs = [make_circ(elem, full=False, radius=r) for elem, r in zip(anchor_coords, circ_set)]
+    c = PatchCollection(circs, alpha=0.8)
+    c.set_visible(False)
+    return c
+
+
+def init_points(ax, points):
     pt_coll = PatchCollection(points, alpha=0.6)
     colors = ['limegreen'] * len(points)
     pt_coll.set_facecolors(colors)
-    pt_coll.set_edgecolor('wheat')
+    pt_coll.set_edgecolor('black')
     ax.add_collection(pt_coll)
+    return pt_coll, colors
 
-    for i, c in zip(inter_colls, circ_colls):
-        ax.add_collection(i)
-        ax.add_collection(c)
 
+def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors):
     plt.axis('equal', emit=True)
     plt.gca().set_ylim(-1.5, 1.5)
     plt.gca().set_xlim(-1.7, 1.7)
@@ -78,16 +75,16 @@ def draw():
 
     def hover(event):
         nonlocal active
-        # print(active, circ_colls[active], pt_coll.contains(event)[1])
         if event.inaxes == ax:
-            ct, ind = pt_coll.contains(event)
+            ct, indexes = pt_coll.contains(event)
+            ind = indexes['ind']
             if ct:
-                if active not in ind['ind']:
+                if active not in ind:
                     deactivate()
-                    active = ind['ind'][0]
+                    active = ind[randrange(len(ind))]  # don't be arbitrary in ambiguous situations
                 circ_colls[active].set_visible(True)
                 inter_colls[active].set_visible(True)
-                colors[active] = 'red'
+                colors[active] = 'crimson'
 
             else:
                 deactivate()
@@ -96,6 +93,37 @@ def draw():
             fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
+
+
+def draw():
+    matplotlib.pyplot.style.use('seaborn')
+    fig, ax = plt.subplots()
+
+    init_polygons(ax)
+    anchor_coords = init_anchors(ax)
+
+    inter_colls = []
+    circ_colls = []
+    points = []
+
+    interesting_intersections = get_objects()
+    readings = read_readings()
+
+    for inter_set, circ_set in zip(interesting_intersections, readings[1]):
+        mean = [sum(y) / len(y) for y in zip(*inter_set[1])]
+        points.append(make_circ(mean, radius=0.03, full=True))
+
+        inter_colls.append(create_inters(inter_set))
+        circ_colls.append(create_circs(circ_set, anchor_coords))
+
+    pt_coll, colors = init_points(ax, points)
+
+    for i, c in zip(inter_colls, circ_colls):
+        ax.add_collection(i)
+        ax.add_collection(c)
+
+    setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors)
+
     plt.show()
 
 

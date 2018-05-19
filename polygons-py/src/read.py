@@ -9,8 +9,9 @@ FIND_FLOATS = r'[-+]?[0-9]*\.?[0-9]+'
 
 
 def once(a_func):
+    """Wrapper to reuse value returned with a first use on all future calls"""
     counter = 0
-    output = 0  # anything
+    output = 0  # may be initiated to anything
 
     def wrapper():
         nonlocal counter, output

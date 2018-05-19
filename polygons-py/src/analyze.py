@@ -1,13 +1,10 @@
-import statistics
 from math import sqrt
-
-import numpy as np
-from matplotlib import path
 
 from src import config
 from src.read import read_readings, read_anchors
 
 
+# predeclarations were needed for typing operator arguments
 class Point:
     pass
 
@@ -55,15 +52,10 @@ class Circle:
         self.r = radius
 
 
-def vector_scale(p1, p2, scale):
-    (x1, y1, _), (x2, y2, _) = p1, p2
-    return x2 + ((x1 - x2) * scale), y2 + ((y1 - y2) * scale)
-
-
 def intersect(o1: Circle, o2: Circle):
-    """Return a tuple of points of intersection for given circles if they intersect,
-    or a midpoint of a distance between circles (points belonging to circles that are closest to
-    each other)"""
+    """Return a list of points of intersection for given circles if they intersect,
+    or of a midpoint of a distance between circles (between those points belonging to circles that
+    are closest to each other)"""
     if o1.r < o2.r:
         return intersect(o2, o1)
     (c1, r1), (c2, r2) = (o1.c, o1.r), (o2.c, o2.r)
@@ -88,26 +80,22 @@ def intersect(o1: Circle, o2: Circle):
         # d(|a| - |b|) = r1^2 - r2^2   (we know d > 0)
         # |a| = |b| + ((r1^2 - r2^2)/d)
         p1_to_mid_length = (((r1 ** 2 - r2 ** 2) / center_dist) + center_dist) / 2
-        # print(p1_to_mid_length)
         mid = c1 + ((c2 - c1) * (p1_to_mid_length / center_dist))
         mid_to_i1_length = sqrt(r1 ** 2 - p1_to_mid_length ** 2)
         v1 = ((c2 - c1) * (mid_to_i1_length / center_dist)).rotate()
-        # print((c1.x, c1.y), (c2.x, c2.y), p1_to_mid_length, (mid.x, mid.y), (v1.x, v1.y))
         i1 = mid + v1
         i2 = mid + (-v1)
-        # print((i1.x, i1.y), (i2.x, i2.y))
         return [i1, i2]
 
 
 def median(iterable):
     length = len(iterable)
-    # print(length, '   ', iterable)
     if length == 0:
         return 0
     out = iterable[int(length / 2)]
     if length % 2 == 0:
         point = iterable[int((length - 1) / 2)]
-        out = tuple(a + b / 2 for a, b in zip(out, point))
+        out = tuple(a + b / 2 for a, b in zip(out, point))  # mean of two middle elements
     return out
 
 
@@ -133,10 +121,13 @@ def get_objects():
                 intersections.extend(out)
 
         points = [(elem.x, elem.y) for elem in intersections]
+
         # indepedent x and y median point
         med = (median(sorted(points, key=lambda elem: elem[0]))[0],
                median(sorted(points, key=lambda elem: elem[1]))[1])
-        # print(med)
-        output.append((tag_id, list(filter(lambda elem: (med[0] - elem[0]) ** 2 + (med[1] - elem[1]) ** 2 < config.EPSILON, points))))
+
+        output.append((tag_id, list(
+            filter(lambda elem: (med[0] - elem[0]) ** 2 + (med[1] - elem[1]) ** 2 < config.EPSILON,
+                   points))))  # filter out those that are too distant from median
 
     return output
