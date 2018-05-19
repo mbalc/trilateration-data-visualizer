@@ -1,5 +1,7 @@
 from math import sqrt
 
+import numpy as np
+
 from src import config, utilities, read
 
 
@@ -132,6 +134,7 @@ def get_intersections():
 
     return output
 
+
 @utilities.once
 def get_point_data():
     anchor_coords = read.anchors()[1]
@@ -141,22 +144,31 @@ def get_point_data():
     points = []
     circs = []
     for inter_set, circ_set in zip(inters, readings[1]):
-        points.append([sum(y) / len(y) for y in zip(*inter_set[1])])
+        points.append([sum(y) / len(y) for y in zip(*inter_set[1])])  # mean of all points
         circs.append(zip(anchor_coords, circ_set))
 
-    return zip(points, circs, inters)
+    return points, circs, inters
 
 
-# @utilities.once
-# def get_containment():
-#     inters = get_intersections()
-#     polys = read.polygons()
-#
-#     print(inters)
-#
-#     for p in polys:
-#         print(p.contains_points(inters))
-#
-#
-# get_containment()
+def index_by_mask(mask):
+    return np.ma.array(range(len(mask)), mask=mask).compressed()
 
+
+@utilities.once
+def get_containment_data():
+    tag_ids = read.readings()[0]
+    pt_data = get_point_data()
+    polys = read.polygons()
+
+    cont_data = np.logical_not([poly.contains_points(pt_data[0]) for poly in polys])
+
+    # special case for poly no. 1 - as stated in task description
+    cont_data[1] = np.logical_or(cont_data[1], np.logical_not(cont_data[2]))
+
+    pt_id_cont = [index_by_mask(cont) for cont in cont_data]
+    # TODO check if tag_ids are not wrong
+    tag_id_cont = [sorted(set([tag_ids[pt_id] for pt_id in poly_cont])) for poly_cont in pt_id_cont]
+
+    not_in_any = index_by_mask(np.any(np.logical_not(cont_data), axis=0))
+
+    return not_in_any, pt_id_cont, tag_id_cont

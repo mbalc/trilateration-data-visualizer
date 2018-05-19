@@ -109,7 +109,7 @@ def draw():
     interesting_intersections = get_intersections()
     readings = read.readings()
 
-    for point, circs, inters in analyze.get_point_data():
+    for point, circs, inters in zip(*analyze.get_point_data()):
         points.append(make_circ(point, radius=0.03, full=True))
         circ_colls.append(create_circs(circs))
         inter_colls.append(create_inters(inters))
