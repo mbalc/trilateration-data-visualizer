@@ -7,7 +7,6 @@ import numpy as np
 from matplotlib.patches import Circle, Wedge
 
 from src import read, analyze
-from src.analyze import get_intersections
 
 
 def make_circ(elem, *args, full=True, radius=0.04):
@@ -62,6 +61,7 @@ def init_points(ax, points):
 
 
 def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors):
+    print('Binding hover event...')
     plt.axis('equal', emit=True)
     plt.gca().set_ylim(-1.5, 1.5)
     plt.gca().set_xlim(-1.7, 1.7)
@@ -95,6 +95,7 @@ def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors):
     fig.canvas.mpl_connect("motion_notify_event", hover)
 
 
+
 def draw():
     matplotlib.pyplot.style.use('seaborn')
     fig, ax = plt.subplots()
@@ -106,10 +107,10 @@ def draw():
     circ_colls = []
     points = []
 
-    interesting_intersections = get_intersections()
+    interesting_intersections = analyze.intersections()
     readings = read.readings()
 
-    for point, circs, inters in zip(*analyze.get_point_data()):
+    for point, circs, inters in zip(*analyze.point_data()):
         points.append(make_circ(point, radius=0.03, full=True))
         circ_colls.append(create_circs(circs))
         inter_colls.append(create_inters(inters))
@@ -125,4 +126,3 @@ def draw():
     plt.show()
 
 
-draw()

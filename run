@@ -1,2 +1,3 @@
 #!/bin/bash
-ipython src/plot.py
+echo "Initiating ipython..."
+ipython main.py

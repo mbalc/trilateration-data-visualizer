@@ -101,7 +101,7 @@ def median(iterable):
 
 
 @utilities.once
-def get_intersections():
+def intersections():
     tag_ids, readings = read.readings()
     _, anchors = read.anchors()
 
@@ -116,13 +116,13 @@ def get_intersections():
     output = []
 
     for tag_id, reads in circles:
-        intersections = []
+        inters = []
         for i1 in range(len(reads)):
             for i2 in range(i1 + 1, len(reads)):
                 out = intersect(reads[i1], reads[i2])
-                intersections.extend(out)
+                inters.extend(out)
 
-        points = [(elem.x, elem.y) for elem in intersections]
+        points = [(elem.x, elem.y) for elem in inters]
 
         # indepedent x and y median point
         med = (median(sorted(points, key=lambda elem: elem[0]))[0],
@@ -136,10 +136,10 @@ def get_intersections():
 
 
 @utilities.once
-def get_point_data():
+def point_data():
     anchor_coords = read.anchors()[1]
 
-    inters = get_intersections()
+    inters = intersections()
     readings = read.readings()
     points = []
     circs = []
@@ -155,9 +155,9 @@ def index_by_mask(mask):
 
 
 @utilities.once
-def get_containment_data():
+def containment_data():
     tag_ids = read.readings()[0]
-    pt_data = get_point_data()
+    pt_data = point_data()
     polys = read.polygons()
 
     cont_data = np.logical_not([poly.contains_points(pt_data[0]) for poly in polys])
