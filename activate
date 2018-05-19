@@ -1,2 +1,2 @@
 #!/bin/bash
-. ./venv/bin/activate
+. $(dirname "$0")/venv/bin/activate

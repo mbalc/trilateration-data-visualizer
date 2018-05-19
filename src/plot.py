@@ -1,3 +1,4 @@
+import copy
 from random import randrange
 
 import matplotlib.pyplot as plt
@@ -21,19 +22,23 @@ def make_circ(elem, *args, full=True, radius=0.04):
 def init_polygons(ax):
     polygons = read.polygons()
     poly_coll = PatchCollection(polygons, alpha=0.6)
-    poly_coll.set_facecolors(plt.get_cmap('Pastel1')(np.arange(.10, 1.99, .24)))
+    poly_colors = plt.get_cmap('Pastel1')(np.arange(.10, 1.99, .24))
+    poly_coll.set_facecolors(poly_colors)
     poly_coll.set_edgecolor('black')
     ax.add_collection(poly_coll)
+
+    return poly_coll, poly_colors
 
 
 def init_anchors(ax):
     anchor_coords = read.anchors()[1]
-    anchors = [make_circ(elem, radius=0.055) for elem in anchor_coords]
+    anchors = [make_circ(elem, radius=0.025) for elem in anchor_coords]
     anch_coll = PatchCollection(anchors, alpha=0.8)
     anch_coll.set_color('black')
+    anch_coll.set_visible(False)
     ax.add_collection(anch_coll)
 
-    return anchor_coords
+    return anchor_coords, anch_coll
 
 
 def create_inters(inter_set):
@@ -60,18 +65,29 @@ def init_points(ax, points):
     return pt_coll, colors
 
 
-def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors):
+def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, pt_colors, poly_coll, poly_colors, anch_coll):
     print('Binding hover event...')
     plt.axis('equal', emit=True)
-    plt.gca().set_ylim(-1.5, 1.5)
-    plt.gca().set_xlim(-1.7, 1.7)
+    plt.gca().set_ylim(-1.4, 1.4)
+    plt.gca().set_xlim(-1.6, 1.6)
+
+    poly_colors_backup = copy.deepcopy(poly_colors)
 
     active = -1
+    _, _, _, mask = analyze.containment_data()
+    tag_ids = read.readings()[0]
 
     def deactivate():
         circ_colls[active].set_visible(False)
         inter_colls[active].set_visible(False)
-        colors[active] = 'limegreen'
+        anch_coll.set_visible(False)
+
+        pt_colors[active] = 'limegreen'
+        for i in range(len(poly_colors)):
+            poly_colors[i] = poly_colors_backup[i]
+
+        plt.title('')
+        plt.suptitle('Hover a point to see more details')
 
     def hover(event):
         nonlocal active
@@ -82,33 +98,42 @@ def setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors):
                 if active not in ind:
                     deactivate()
                     active = ind[randrange(len(ind))]  # don't be arbitrary in ambiguous situations
+
+                active_is_in = [i for i in range(len(mask)) if not mask[i][active]]
+
                 circ_colls[active].set_visible(True)
                 inter_colls[active].set_visible(True)
-                colors[active] = 'crimson'
+                anch_coll.set_visible(True)
+
+                pt_colors[active] = 'crimson'
+                for i in active_is_in:
+                    poly_colors[i] = 0.7
+
+                plt.title('Point index: ' + str(active) +
+                          '\nTag-ID: ' + str(tag_ids[active]) +
+                          '\nIs contained in polygon(s) with id(s): ' + str(active_is_in))
+                plt.suptitle('')
 
             else:
                 deactivate()
 
-            pt_coll.set_facecolors(colors)
+            pt_coll.set_facecolors(pt_colors)
+            poly_coll.set_facecolors(poly_colors)
             fig.canvas.draw_idle()
 
     fig.canvas.mpl_connect("motion_notify_event", hover)
-
 
 
 def draw():
     matplotlib.pyplot.style.use('seaborn')
     fig, ax = plt.subplots()
 
-    init_polygons(ax)
-    anchor_coords = init_anchors(ax)
+    poly_coll, poly_colors = init_polygons(ax)
+    anchor_coords, anch_coll = init_anchors(ax)
 
     inter_colls = []
     circ_colls = []
     points = []
-
-    interesting_intersections = analyze.intersections()
-    readings = read.readings()
 
     for point, circs, inters in zip(*analyze.point_data()):
         points.append(make_circ(point, radius=0.03, full=True))
@@ -121,8 +146,7 @@ def draw():
         ax.add_collection(i)
         ax.add_collection(c)
 
-    setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors)
+    setup_plots(fig, ax, pt_coll, circ_colls, inter_colls, colors, poly_coll, poly_colors,
+                anch_coll)
 
     plt.show()
-
-

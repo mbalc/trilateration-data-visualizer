@@ -9,7 +9,7 @@ def print_list(arg, desc):
 def print_results():
     print('\n########    RESULTS    ########\n')
 
-    outside_pt_ids, poly_pt_ids, poly_tag_ids = analyze.containment_data()
+    outside_pt_ids, poly_pt_ids, poly_tag_ids, _ = analyze.containment_data()
 
     for i in range(len(poly_pt_ids)):
         print('  Polygon no.', i, ':')
@@ -23,7 +23,7 @@ def print_results():
     ids = read.readings()[0]
     print('Most frequent Tag-ID:', max(set(ids), key=ids.count))
 
-    print('\n########  RESULTS END  ########\n')
+    print('\n########  RESULTS END  ########\n\n')
 
 
 print('Reading files...')

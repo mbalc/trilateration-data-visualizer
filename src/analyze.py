@@ -171,4 +171,4 @@ def containment_data():
 
     not_in_any = index_by_mask(np.any(np.logical_not(cont_data), axis=0))
 
-    return not_in_any, pt_id_cont, tag_id_cont
+    return not_in_any, pt_id_cont, tag_id_cont, cont_data
